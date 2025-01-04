@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Web with Telegram</title>
+    <style>
+        @import url(https://fonts.bunny.net/css?family=doppio-one:400);
+
+        :root {
+            --clr-txt: rgb(8, 47, 73);
+            --clr-border: rgb(8, 47, 73);
+            --clr-cta: rgb(2, 132, 199);
+            --link-bg: linear-gradient(90deg, #FF5722, #FFC107);
+            --link-hover: #f39c12;
+            --link-border: #e67e22;
+            --bounce-distance: 10px;
+        }
+
+        body {
+            background: white;
+            color: rgb(203, 213, 225);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            font-family: system-ui;
+            background-image: radial-gradient(var(--clr-border), black);
+        }
+
+        canvas {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+        }
+
+        #buttons-container {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1;
+        }
+
+        #questionContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        #questionText {
+            font-size: 2rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .radio-btn-group {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .radio-btn-group input[type="radio"] {
+            display: none;
+        }
+
+        .radio-btn-group label {
+            background: var(--clr-cta);
+            padding: 15px 30px;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-size: 1.2rem;
+        }
+
+        .radio-btn-group label:hover {
+            background: rgb(0, 105, 165);
+        }
+
+        .main-content {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+
+        .main-content a {
+            display: inline-block;
+            margin: 20px;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: var(--link-bg);
+            color: #fff;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+            border: 3px solid transparent;
+            transform: translateY(0);
+        }
+
+        .main-content a:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+            background: var(--link-hover);
+            border: 3px solid var(--link-border);
+        }
+
+        .main-content a:active {
+            transform: translateY(var(--bounce-distance));
+            background: var(--link-bg);
+        }
+
+        .main-content a:focus {
+            outline: none;
+            animation: bounce 0.3s ease-in-out;
+        }
+
+        @keyframes bounce {
+            0% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-5px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<div class="container" id="questionContainer">
+    <h2 id="questionText">Do you use Telegram?</h2>
+    <div class="radio-btn-group">
+        <input type="radio" name="telegram-option" value="yes" id="yes" />
+        <label for="yes" onclick="handleYes()">Yes</label>
+    </div>
+    <div class="radio-btn-group">
+        <input type="radio" name="telegram-option" value="no" id="no" />
+        <label for="no" onclick="handleNo()">No</label>
+    </div>
+</div>
+
+<div class="main-content" id="mainContent">
+    <h1>Welcome to the Adult 18+ Page</h1>
+    <a href="https://t.me/MidasRWA_bot/app?startapp=ref_25e58945-1ef1-4aa1-bb96-c0dd1d12841d" target="_blank">Click 18+ Link 1</a>
+    <a href="https://t.me/blum/app?startapp=ref_LsVxMHfqXc" target="_blank">Click 18+ Link 2</a>
+</div>
+
+<div id="buttons-container">
+  <button id="yes-button">Yes</button>
+  <button id="no-button">No</button>
+</div>
+
+<script id="vertexShader" type="x-shader/x-vertex">#version 300 es
+precision highp float;
+in vec4 position;
+
+void main() {
+  gl_Position = vec4(position);
+}
+</script>
+
+<script id="fragmentShader" type="x-shader/x-fragment">#version 300 es
+#if __VERSION__ < 130
+#define TEXTURE2D texture2D
+#else
+#define TEXTURE2D texture
+#endif
+precision highp float;
+out vec4 fragColor;
+uniform vec2 u_resolution;
+uniform vec4 u_mouse;
+uniform float u_time;
+uniform sampler2D iChannel0;
+uniform sampler2D iChannel1;
+  
+#define R           u_resolution
+#define T           u_time
+#define M           u_mouse
+
+#define PI         3.14159265359
+#define PI2        6.28318530718
+
+const float N = 3.;
+const float s4 = .577350, s3 = .288683, s2 = .866025;
+const vec2 s = vec2(1.732,1);
+
+vec3 clr, trm;
+float tk, ln;
+
+mat2 r2,r3;
+
+mat2 rot(float g) { return mat2(cos(g), sin(g),-sin(g), cos(g)); }
+float hash21(vec2 p) { 
+    p.x = mod(p.x,3.*N);
+    p.y = mod(p.y,3.*N);
+    return fract(sin(dot(p,vec2(26.37,45.93)))*4374.23); 
+}
+
+vec4 hexgrid(vec2 uv) {
+    vec2 p1 = floor(uv/vec2(1.732,1))+.5,
+         p2 = floor((uv-vec2(1,.5))/vec2(1.732,1))+.5;
+    vec2 h1 = uv- p1*vec2(1.732,1),
+         h2 = uv-(p2+.5)*vec2(1.732,1);
+    return dot(h1,h1) < dot(h2,h2) ? vec4(h1,p1) : vec4(h2,p2+.5);
+}
+
+vec3 hsv( vec3 a ) {
+    vec3 c = a + vec3(T*.1,0,0);
+    vec3 rgb = clamp(abs(mod(c.x*2.+vec3(0,4,2),6.)-3.)-1.,0.,1.);
+    return c.z * mix(vec3(1),rgb,c.y);
+}
+
+void draw(float d, float px, inout vec3 C) {
+    C = mix(C,C*.35,smoothstep(.06+px,-px,abs(d-.01)-tk) );
+    C = mix(C,clr,smoothstep(px,-px,abs(d)-tk) );
+    C = mix(C,trm,smoothstep(px,-px,abs(abs(d)-tk)-ln) );
+}
+
+void main()
+{
+    vec2 F = gl_FragCoord.xy;
+    r2 = rot( 1.047);
+    r3 = rot(-1.047);
+    
+    vec2 uv = (2.*F-R.xy)/max(R.x,R.y);
+
+    uv = -vec2(log(length(uv)),atan(uv.y,uv.x))-((2.*M.xy-R.xy)/R.xy);
+    uv /= 3.628;
+    uv *= N;
+        
+    tk = .13+.09*sin(uv.x*14.+T), ln = .015;
+    
+    uv.y += T*.05;
+    uv.x += T*.15;
+    
+    float sc = 3., px = fwidth(uv.x*sc);
+
+    vec4 H;
+    vec2 p, id;
+    
+    H = hexgrid(uv.yx*sc);
+    p = H.xy, id = H.zw;
+  
+    float hs = hash21(id);
+    
+    if(hs<.5) p *= hs < .25 ? r3 : r2;
+
+    vec2 p0 = p - vec2(-s3, .5),
+         p1 = p - vec2( s4,  0),
+         p2 = p - vec2(-s3,-.5);
+
+    vec3 d3 = vec3(length(p0), length(p1), length(p2));
+    vec2 pp = vec2(0);
+
+    if(d3.x>d3.y) pp = p1;
+    if(d3.y>d3.z) pp = p2;
+    if(d3.z>d3.x && d3.y>d3.x) pp = p0;
+     
+    
+    vec3 C = vec3(0);
+    float d = max(abs(p.x)*.866025 + abs(p.y)/2., abs(p.y))-(.5-ln);
+    C = mix(C,vec3(clamp(hs*.15,.03,.15)),smoothstep(px,-px,d) );
+    C = mix(C,C+.1,mix(smoothstep(px,-px,d+.035),0.,clamp(1.-(H.y+.15),0.,1.)) );
+    C = mix(C,C*.1,mix(smoothstep(px,-px,d+.025),0.,clamp(1.-(H.x+.5),0.,1.)) );
+    
+    float b = length(pp)-s3;
+    float t = 1e5, g = 1e5;
+
+    hs = fract(hs*53.71);
+    if(hs>.95) {
+        vec2 p4 = p*r3, p5 = p*r2;
+        
+        b = length(vec2(p.x,abs(p.y)-.5));
+        g = length(p5.x);
+        t = length(p4.x);
+    }else if(hs>.65) {
+        b = length(p.x);
+        g = min(length(p1)-s3,length(p1+vec2(1.155,0))-s3);
+    } else if(hs<.15) {
+        vec2 p4 = p*r3, p5 = p*r2;
+        
+        t = length(p.x);
+        b = length(p5.x);
+        g = length(p4.x);
+    } else if(hs<.22) {
+        b = length(vec2(p.x,abs(p.y)-.5));
+        g = min(length(p1)-s3,length(p1+vec2(1.155,0))-s3);
+    }
+    
+    
+    clr = hsv(vec3(uv.x*.75,.75,.5));
+    trm = vec3(.0);
+
+    draw(t,px,C);
+    draw(g,px,C);
+    draw(b,px,C);
+    
+    C = pow(C,vec3(.4545));
+    fragColor = vec4(C,1.);
+}
+</script>
+
+<script>
+const woodTexture = "https://assets.codepen.io/163598/tile01.jpg";
+const stoneTexture = "https://assets.codepen.io/163598/tile012.jpg";
+const textureList = [stoneTexture, woodTexture];
+
+class Mouse {
+  constructor(element) {
+    this.element = element || window;
+    this.drag = false;
+    this.x = ~~(document.documentElement.clientWidth, window.innerWidth || 0) / 2;
+    this.y = ~~(document.documentElement.clientHeight, window.innerHeight || 0) / 2;
+    this.getCoordinates = this.getCoordinates.bind(this);
+  }
+
+  getCoordinates(event) {
+    let x = event.clientX || 0;
+    let y = event.clientY || 0;
+    this.x = x;
+    this.y = y;
+    if (this.drag) {
+      return x - this.previousX;
+    }
+    this.previousX = x;
+    return y;
+  }
+}
+
+const mouse = new Mouse(); 
+window.addEventListener('mousemove', (event) => {
+  mouse.getCoordinates(event);
+});
+
+let buttonsContainer = document.getElementById("buttons-container");
+
+function handleYes() {
+  window.location.href = "https://t.me/PAWSOG_bot/PAWS?startapp=WZWswyx2";
+}
+
+function handleNo() {
+  window.location.href = "https://play.google.com/store/apps/details?id=org.telegram.messenger";
+}
+</script>
+
+</body>
+</html>
